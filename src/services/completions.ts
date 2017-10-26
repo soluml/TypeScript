@@ -344,7 +344,20 @@ namespace ts.Completions {
         // Compute all the completion symbols again.
         const completionData = getCompletionData(typeChecker, log, sourceFile, position, allSourceFiles);
         if (completionData) {
-            const { symbols, location, allowStringLiteral, symbolToOriginInfoMap } = completionData;
+            const { symbols, location, allowStringLiteral, symbolToOriginInfoMap, request } = completionData;
+
+            if (request) {
+                switch (request.kind) {
+                    case "JsDocTagName":
+                        return JsDoc.getJSDocTagNameCompletionDetails(name);
+                    case "JsDocTag":
+                        return JsDoc.getJSDocTagCompletionDetails(name);
+                    case "JsDocParameterName":
+                        return JsDoc.getJSDocParameterNameCompletionDetails(name);
+                    default:
+                        Debug.assertNever(request);
+                }
+            }
 
             // Find the symbol with the matching entry name.
             // We don't need to perform character checks here because we're only comparing the
@@ -424,12 +437,12 @@ namespace ts.Completions {
     }
 
     interface CompletionData {
-        symbols: Symbol[];
+        symbols: ReadonlyArray<Symbol>;
         isGlobalCompletion: boolean;
         isMemberCompletion: boolean;
         allowStringLiteral: boolean;
         isNewIdentifierLocation: boolean;
-        location: Node;
+        location: Node | undefined;
         isRightOfDot: boolean;
         request?: Request;
         keywordFilters: KeywordCompletionFilters;
@@ -516,7 +529,7 @@ namespace ts.Completions {
 
             if (request) {
                 return {
-                    symbols: undefined,
+                    symbols: emptyArray,
                     isGlobalCompletion: false,
                     isMemberCompletion: false,
                     allowStringLiteral: false,
